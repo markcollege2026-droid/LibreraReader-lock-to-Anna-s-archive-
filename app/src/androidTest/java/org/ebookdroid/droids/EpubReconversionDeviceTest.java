@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 
+import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -14,11 +15,13 @@ import com.foobnix.model.AppProfile;
 import com.foobnix.model.AppSP;
 import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.AppsConfig;
+import com.foobnix.pdf.info.Engines;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.sys.TempHolder;
 
 import org.ebookdroid.core.codec.AbstractCodecContext;
 import org.ebookdroid.core.codec.CodecDocument;
+import org.ebookdroid.droids.foliate.FoliateHostActivity;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +55,7 @@ public class EpubReconversionDeviceTest {
     private static final long STAMP = 1_000_000_000_000L;
 
     private File book;
+    private ActivityScenario<FoliateHostActivity> host;
     private boolean hyphensBefore;
     private String langBefore;
     private int engineBefore;
@@ -77,6 +81,12 @@ public class EpubReconversionDeviceTest {
         CacheZipUtils.createAllCacheDirs();
         AppProfile.init(context);
         TempHolder.get().loadingCancelled.set(false);
+        if (!Engines.IS_MUPDF) {
+            // The JS-only build opens EPUBs with Foliate, whose WebView needs an attached host.
+            // Run the same conversion-cache assertions there rather than skipping the suite.
+            host = ActivityScenario.launch(FoliateHostActivity.class);
+            InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+        }
         hyphensBefore = BookCSS.get().isAutoHypens;
         langBefore = AppSP.get().hypenLang;
         engineBefore = AppState.get().epubEngine;
@@ -100,6 +110,9 @@ public class EpubReconversionDeviceTest {
         AppState.get().epubEngine = engineBefore;
         if (book != null) {
             book.delete();
+        }
+        if (host != null) {
+            host.close();
         }
     }
 

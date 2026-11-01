@@ -26,6 +26,7 @@ import com.foobnix.pdf.info.AnnotationsData;
 import com.foobnix.pdf.info.model.AnnotationType;
 import com.foobnix.pdf.info.AnnotationsFinder;
 import com.foobnix.pdf.info.AppsConfig;
+import com.foobnix.pdf.info.Engines;
 import com.foobnix.pdf.info.model.BookCSS;
 import com.foobnix.sys.TempHolder;
 
@@ -141,7 +142,8 @@ public class FoliateEngineDeviceTest {
         AppState.get().epubEngine = AppState.EPUB_ENGINE_MUPDF;
         CodecDocument document = open();
         try {
-            assertFalse("MuPDF by default, got " + document, document instanceof FoliateDocument);
+            assertEquals("MuPDF when bundled, otherwise the Foliate-only build: " + document,
+                    !Engines.IS_MUPDF, document instanceof FoliateDocument);
         } finally {
             document.recycle();
         }
@@ -693,7 +695,7 @@ public class FoliateEngineDeviceTest {
 
             // What BookCSS asks for: `margin * 2 / 10` ems a side, at the reading font size
             final float em = Dips.spToPx(BookCSS.get().fontSizeSpFoliate);
-            final float expected = (BookCSS.get().marginLeft + BookCSS.get().marginRight)
+            final float expected = (BookCSS.get().marginLeftFoliate + BookCSS.get().marginRightFoliate)
                     * 0.2f * em / 2f / PAGE_WIDTH;
             assertTrue("the margins are the reader's, left " + left + " against " + expected,
                     left > expected * 0.5f && left < expected * 1.8f);
@@ -851,13 +853,17 @@ public class FoliateEngineDeviceTest {
     /** A place one engine wrote means nothing to another, and it says so rather than guessing. */
     @Test
     public void aLocationFromAnotherEngineIsRefused() {
-        final CodecDocument mupdf = open(AppState.EPUB_ENGINE_MUPDF);
-        try {
-            assertNull("MuPDF names no place", mupdf.getLocation(1));
-            assertEquals("and resolves none", -1,
-                    mupdf.findLocationPage("epubcfi(/6/4!/4/2/2[x]/1:0)"));
-        } finally {
-            mupdf.recycle();
+        // FDroid exercises the MuPDF-specific contract. FDroid-JS intentionally cannot open
+        // MuPDF, and requesting its setting selects Foliate instead (tested above).
+        if (Engines.IS_MUPDF) {
+            final CodecDocument mupdf = open(AppState.EPUB_ENGINE_MUPDF);
+            try {
+                assertNull("MuPDF names no place", mupdf.getLocation(1));
+                assertEquals("and resolves none", -1,
+                        mupdf.findLocationPage("epubcfi(/6/4!/4/2/2[x]/1:0)"));
+            } finally {
+                mupdf.recycle();
+            }
         }
 
         final CodecDocument foliate = open(AppState.EPUB_ENGINE_FOLIATE);
