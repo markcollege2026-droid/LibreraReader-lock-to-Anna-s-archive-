@@ -267,6 +267,14 @@ public class FoliateEngineDeviceTest {
 
     @Test
     public void pagesRender() {
+        // The first capture of a newly attached, offscreen WebView must never race its first
+        // compositor frame. Re-open it each time; a cached bitmap would hide that race.
+        for (int attempt = 0; attempt < 3; attempt++) {
+            assertFreshPagesRender();
+        }
+    }
+
+    private void assertFreshPagesRender() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
             document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);

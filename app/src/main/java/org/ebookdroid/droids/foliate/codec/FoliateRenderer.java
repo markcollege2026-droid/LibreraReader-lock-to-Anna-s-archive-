@@ -209,6 +209,9 @@ class FoliateRenderer {
         settings.setAllowContentAccess(false);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
+        // This attached view lives outside the activity's visible bounds. Without preraster,
+        // Chromium may skip its tiles even after JavaScript has finished laying out the page.
+        settings.setOffscreenPreRaster(true);
 
         local.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient() {
             @Override
@@ -423,40 +426,70 @@ class FoliateRenderer {
     /**
      * Draws whatever page the book is positioned on.
      *
-     * The WebView has already been told, as part of the preceding {@code goTo}, to let two frames
-     * pass before answering, so the layout it is drawn from is the one that was asked for.
+     * JavaScript's layout/animation frames do not acknowledge Chromium's compositor. Wait for
+     * WebView's visual-state barrier too: its next draw must include the state submitted before
+     * this request. Together with offscreen preraster, this also works for our parked view.
      */
     Bitmap capture(final int width, final int height) {
         if (!canWait() || !isUsable()) {
             return null;
         }
         final Bitmap[] out = new Bitmap[1];
+        // Guarded by out, so a late callback cannot leak a bitmap or publish after a timeout.
+        final boolean[] expired = new boolean[1];
         final CountDownLatch done = new CountDownLatch(1);
         handler.post(new Runnable() {
             @Override
             public void run() {
-                Bitmap bitmap = null;
+                final WebView local = web;
+                if (local == null || destroyed) {
+                    done.countDown();
+                    return;
+                }
                 try {
-                    final WebView local = web;
-                    if (local == null) {
-                        return;
-                    }
-                    bitmap = Bitmap.createBitmap(width, height, AppsConfig.CURRENT_BITMAP_ARGB);
-                    final Canvas canvas = new Canvas(bitmap);
-                    local.draw(canvas);
-                    out[0] = bitmap;
-                    bitmap = null;
+                    local.postVisualStateCallback(IDS.incrementAndGet(), new WebView.VisualStateCallback() {
+                        @Override
+                        public void onComplete(final long requestId) {
+                            Bitmap bitmap = null;
+                            try {
+                                synchronized (out) {
+                                    if (expired[0] || destroyed || web != local) {
+                                        return;
+                                    }
+                                }
+                                bitmap = Bitmap.createBitmap(width, height, AppsConfig.CURRENT_BITMAP_ARGB);
+                                final Canvas canvas = new Canvas(bitmap);
+                                local.draw(canvas);
+                                synchronized (out) {
+                                    if (!expired[0]) {
+                                        out[0] = bitmap;
+                                        bitmap = null;
+                                    }
+                                }
+                            } catch (Throwable e) {
+                                LOG.e(e);
+                            } finally {
+                                if (bitmap != null) {
+                                    bitmap.recycle();
+                                }
+                                done.countDown();
+                            }
+                        }
+                    });
                 } catch (Throwable e) {
                     LOG.e(e);
-                } finally {
-                    if (bitmap != null) {
-                        bitmap.recycle();
-                    }
                     done.countDown();
                 }
             }
         });
-        if (!await(done, CALL_TIMEOUT_MS, "capture")) {
+        if (!await(done, CALL_TIMEOUT_MS, "capture visual state")) {
+            synchronized (out) {
+                expired[0] = true;
+                if (out[0] != null) {
+                    out[0].recycle();
+                    out[0] = null;
+                }
+            }
             return null;
         }
         return out[0];
