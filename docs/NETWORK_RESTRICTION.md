@@ -84,7 +84,10 @@ explicit CI flag, release APKs are unsigned. Never commit signing keys.
 ## Verification in the Arena sandbox
 
 The three shared `NetworkPolicyTest` tests were compiled and executed successfully
-using Java 21 and JUnit 4.13.2. The entry-point audit, Java syntax parsing, workflow
+using Java 21 and JUnit 4.13.2. The production HTTP policy also compiled against
+OkHttp 3.12.6 and passed a local HTTP-server smoke test: initial denial before DNS,
+allowed HTTP, blocked cross-host redirect, allowed relative redirect, and policy
+retention on cloned clients. The entry-point audit, Java syntax parsing, workflow
 YAML parsing, shell syntax check and `git diff --check` also pass.
 
 Full local Gradle compilation is blocked here: Gradle's distribution host, Google
