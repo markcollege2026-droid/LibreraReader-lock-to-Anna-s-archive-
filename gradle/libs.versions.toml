@@ -40,7 +40,7 @@ okioParent="1.17.6"
 okhttpDigest="3.1.1"
 
 targetSdk="36"
-compileSdk="36"
+compileSdk="37"
 
 minSdk="24"
 jvmTarget = "21"
