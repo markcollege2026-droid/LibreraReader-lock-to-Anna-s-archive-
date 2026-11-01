@@ -43,7 +43,7 @@ The Gradle/SDK/native build downloads are likewise build-time operations.
 
 ## Build and CI
 
-This fork's version catalog requires **Java 21**, compile SDK **37**, and the
+This fork's version catalog requires **Java 21**, compile SDK **36**, and the
 checked-in Gradle **9.7.1** wrapper (not Java 17). On a machine with the Android
 SDK and NDK 27.2.12479018 installed:
 
@@ -83,9 +83,9 @@ explicit CI flag, release APKs are unsigned. Never commit signing keys.
 
 ## Verification in the Arena sandbox
 
-The three shared `NetworkPolicyTest` tests were compiled and executed successfully
-using Java 21 and JUnit 4.13.2. The production HTTP policy also compiled against
-OkHttp 3.12.6 and passed a local HTTP-server smoke test: initial denial before DNS,
+All eight `NetworkPolicyTest` / `RestrictedHttpClientTest` tests were compiled
+and executed successfully using Java 21, JUnit 4.13.2 and OkHttp/MockWebServer
+3.12.6. The production HTTP policy also passed a local HTTP-server smoke test: initial denial before DNS,
 allowed HTTP, blocked cross-host redirect, allowed relative redirect, and policy
 retention on cloned clients. The entry-point audit, Java syntax parsing, workflow
 YAML parsing, shell syntax check and `git diff --check` also pass.
@@ -94,3 +94,7 @@ Full local Gradle compilation is blocked here: Gradle's distribution host, Googl
 Maven and Android SDK download hosts are outside the sandbox's network allowlist,
 and no Android SDK/NDK is installed. A passing CI run and downloadable artifacts
 are required before claiming APK delivery or emulator verification.
+
+The first CI attempts exposed an upstream build prerequisite issue: Google SDK
+Manager does not provide the fork's original `platforms;android-37` package.
+The version catalog now uses compile SDK 36, matching the existing target SDK.
