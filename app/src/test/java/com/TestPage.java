@@ -10,7 +10,7 @@ public class TestPage {
     public void test1() {
         String input = "Now <a id=\"page142\"></a>sit down";
         String output = "Now <br> page 142<br> sit down";
-        String result = input.replaceAll("<a id=\"page(\\d+)\"></a>", "<br>page $1<br>");
+        String result = input.replaceAll("<a id=\"page(\\d+)\"></a>", "<br> page $1<br> ");
         assertEquals(output,result);
 
     }
