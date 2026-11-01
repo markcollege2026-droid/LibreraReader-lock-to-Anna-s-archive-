@@ -36,8 +36,8 @@ include(":app")
 include(":libPro")
 
 include(":Builder")
-include(":libDepFree")
-include(":libDepPro")
+// Intentionally excluded: these modules package independent Google/advertising network stacks.
+// No restricted app variant depends on them; root assembleDebug must not build them either.
 
 
 //include(":composeApp")

@@ -59,7 +59,9 @@ bash Builder/ci-native.sh
 
 `Builder/ci-native.sh` builds the fork's patched native reader libraries and
 recreates the checkout's machine-specific symlinks. These large libraries remain
-ignored, not checked into Git. No Firebase file or advertising keys are required.
+ignored, not checked into Git. No Firebase file or advertising keys are required. The unused `libDepFree` and
+`libDepPro` SDK modules are also excluded from the Gradle project so the root
+`assembleDebug` task does not build those unrestricted SDK bundles.
 
 `.github/workflows/ci.yml` runs on every push and pull request (also manually),
 caches Gradle/native outputs, assembles debug APKs, runs JVM tests, assembles a
