@@ -112,3 +112,25 @@ in transitively by `okhttp-digest:3.1.1`; MockWebServer uses that same version t
 avoid a mixed-version test runtime. The pre-existing `TestSync` JVM test now
 supplies an Android storage stub instead of dereferencing android.jar's null
 `Environment.getExternalStorageDirectory()` result.
+
+## Built artifacts and remaining device-test failure
+
+[CI run 41261415806](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/runs/41261415806)
+successfully assembled all debug variants, passed the complete FDroid-JS JVM
+suite, assembled the minified test-key release, and uploaded both universal
+FDroid-JS APKs:
+
+[Download debug + release APKs](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/runs/41261415806/artifacts/13065517601)
+
+The artifact expires after 14 days. Both are evaluation builds; the release is
+**not production-signed**. APK production sources are at commit `1518686`.
+
+The headless emulator executed both FDroid and FDroid-JS device suites. Network
+policy/WebView checks did not report failures. The **overall CI run remains red**:
+`FoliateEngineDeviceTest.everyWordOfThePageIsSelectable` reported an extra `at`
+when selecting the last word on page 0 (`writtenout` versus `writtenoutat`). This
+reader-selection assertion has not been removed, weakened, or excluded to make
+the workflow green. Several optional user-supplied sample-book checks are skipped
+when their fixtures are absent. Complete reports are in the run's `test-results`
+artifact. APK compilation and delivery succeeded; full emulator-suite integrity
+is not yet verified.

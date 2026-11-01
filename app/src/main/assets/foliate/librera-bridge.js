@@ -171,14 +171,14 @@ const normalize = (rect, offset, size) => {
     if (!rect) return null
     // Measured from the edges, not read off the rectangle: the boxes of a word broken across
     // lines are built here out of several of the browser's, and those carry edges only.
-    if (!rectWidth(rect) && !rectHeight(rect)) return null
+    if (rectWidth(rect) <= 0 || rectHeight(rect) <= 0) return null
     const left = (offset.left + rect.left) / size.width
     const right = (offset.left + rect.right) / size.width
     const top = (offset.top + rect.top) / size.height
     const bottom = (offset.top + rect.bottom) / size.height
     // Anything off this page belongs to a neighbouring column. A sliver of slack either side
     // keeps a glyph that straddles the edge rather than dropping it.
-    if (right <= 0.001 || left >= 0.999) return null
+    if (right <= 0.001 || left >= 0.999 || bottom <= 0.001 || top >= 0.999) return null
     return {
         l: Math.max(0, Math.min(1, left)),
         t: Math.max(0, Math.min(1, top)),
@@ -239,35 +239,19 @@ const escapeHtml = text => text
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
+/** A caret or collapsed whitespace has no painted area. */
+const hasArea = rect => rectWidth(rect) > 0 && rectHeight(rect) > 0
+
+/** Inline fragments on one line touch/overlap; equal y alone can also mean another column. */
+const sameLine = (a, b) => Math.abs(a.top - b.top) <= 1
+    && a.left <= b.right + 1 && b.left <= a.right + 1
+
 /**
- * Every word of the page with its rectangle, in reading order, spaces included as words of their
- * own - the shape MuPdfPage builds for Librera, so selection, search and TTS cannot tell them
- * apart. Each word is measured with a Range rather than by wrapping it in an element, so the
- * book's own layout is not disturbed by being measured.
+ * Visit the actual line fragments of each text run, in DOM order. Both selection and TTS must
+ * use these fragments: a whole-run bounding box can span columns and include off-page text.
  */
-const collectWords = () => {
-    const current = contents()
-    if (!current) return { words: [] }
-    const doc = current.doc
-    const offset = frameOffset(doc)
-    if (!offset) return { words: [] }
-    const size = pageSize()
-    const words = []
+const forEachTextFragment = (doc, visit) => {
     const range = doc.createRange()
-
-    /** Adds one word for a range of a text node that is known to sit on a single line. */
-    const add = (node, from, to, text, rect) => {
-        // The whitespace a line wraps on sits at the end of that line, and the browser gives it
-        // the whole rest of the line's width. Highlighted, that draws a band down the right
-        // margin beside every line of a selection. A space is never much wider than it is tall,
-        // whatever the justification stretches it to, so that is what decides.
-        if (/^\s*$/.test(text) && rectWidth(rect) > 3 * rectHeight(rect)) return
-        const box = normalize(rect, offset, size)
-        if (!box) return
-        box.w = readable(text)
-        words.push(box)
-    }
-
     /**
      * A run of the text node as one or more words - one per line it is laid out on.
      *
@@ -287,18 +271,22 @@ const collectWords = () => {
     const addRun = (node, from, to, isSpace) => {
         range.setStart(node, from)
         range.setEnd(node, to)
-        const rects = Array.from(range.getClientRects())
+        const rects = Array.from(range.getClientRects()).filter(hasArea)
         const text = node.nodeValue
 
-        if (rects.length <= 1) {
-            add(node, from, to, isSpace ? ' ' : text.slice(from, to),
-                rects.length ? rects[0] : range.getBoundingClientRect())
+        if (!rects.length) {
+            if (isSpace) visit(node, from, to, ' ', range.getBoundingClientRect())
+            return
+        }
+        if (rects.length === 1) {
+            visit(node, from, to, isSpace ? ' ' : text.slice(from, to),
+                rects[0])
             return
         }
         if (isSpace) {
             // Whitespace collapses to a single space wherever it is drawn; the rest of the run
             // renders nowhere, so the first box is the whole of it.
-            add(node, from, to, ' ', rects[0])
+            visit(node, from, to, ' ', rects[0])
             return
         }
 
@@ -308,7 +296,7 @@ const collectWords = () => {
         const lines = []
         for (const rect of rects) {
             const last = lines[lines.length - 1]
-            if (last && Math.abs(last.top - rect.top) <= 1) {
+            if (last && sameLine(last, rect)) {
                 last.left = Math.min(last.left, rect.left)
                 last.right = Math.max(last.right, rect.right)
                 last.bottom = Math.max(last.bottom, rect.bottom)
@@ -317,30 +305,31 @@ const collectWords = () => {
             }
         }
         if (lines.length <= 1) {
-            add(node, from, to, text.slice(from, to), range.getBoundingClientRect())
+            visit(node, from, to, text.slice(from, to), range.getBoundingClientRect())
             return
         }
 
-        // Where each line's text ends, found by growing the range from the start of the run: the
-        // box of a range only reaches a line once the range does. Measuring whole ranges rather
-        // than single characters is what makes this hold - a character can have no box of its own
-        // at all, which is how the soft hyphen at a break behaves.
+        // A prefix's bounding box retains the bottom of the previous column when the next
+        // column restarts at its top. Comparing only bottom therefore assigns that column's
+        // characters to the previous line. Inspect the last painted fragment instead, in DOM
+        // order, and check BOTH coordinates. Ignore zero-width soft-hyphen/caret rectangles.
         let start = from
         for (let k = 0; k < lines.length; k++) {
             let end = start
             if (k === lines.length - 1) {
                 end = to
             } else {
-                const limit = lines[k].bottom + 1
                 while (end < to) {
                     range.setStart(node, from)
                     range.setEnd(node, end + 1)
-                    if (range.getBoundingClientRect().bottom > limit) break
+                    const prefix = Array.from(range.getClientRects()).filter(hasArea)
+                    const last = prefix[prefix.length - 1]
+                    if (last && !sameLine(lines[k], last)) break
                     end++
                 }
             }
             if (end > start) {
-                add(node, start, end, text.slice(start, end), lines[k])
+                visit(node, start, end, text.slice(start, end), lines[k])
             }
             start = end
         }
@@ -363,6 +352,27 @@ const collectWords = () => {
         }
     }
     range.detach && range.detach()
+}
+
+/** Words and their painted page rectangles, without modifying the book's layout. */
+const collectWords = () => {
+    const current = contents()
+    if (!current) return { words: [] }
+    const doc = current.doc
+    const offset = frameOffset(doc)
+    if (!offset) return { words: [] }
+    const size = pageSize()
+    const words = []
+    forEachTextFragment(doc, (node, from, to, text, rect) => {
+        // A collapsed wrap space must not paint a band across the margin.
+        if (/^\s*$/.test(text) && rectWidth(rect) > 3 * rectHeight(rect)) return
+        const box = normalize(rect, offset, size)
+        if (!box) return
+        const word = readable(text)
+        if (!word) return
+        box.w = word
+        words.push(box)
+    })
     return { words }
 }
 
@@ -384,19 +394,16 @@ const collectText = () => {
     // The paragraphs of this page, in order, each with the text that is actually on it
     const blocks = []
     const seen = new Map()
-    const range = doc.createRange()
-    for (const node of textNodes(doc)) {
-        try {
-            range.selectNodeContents(node)
-        } catch (e) {
-            continue
-        }
-        if (!normalize(range.getBoundingClientRect(), offset, size)) {
-            // The whole node is off this page; its words cannot be on it either
-            continue
-        }
+    forEachTextFragment(doc, (node, from, to, text, rect) => {
         const block = blockOf(node)
         let entry = seen.get(block)
+        // Keep source whitespace between visible words even when the browser collapses the
+        // wrap space to a caret. Do not create a paragraph for off-page whitespace alone.
+        if (/^\s*$/.test(text)) {
+            if (entry) entry.text += ' '
+            return
+        }
+        if (!normalize(rect, offset, size)) return
         if (!entry) {
             entry = { text: '', size: 0 }
             seen.set(block, entry)
@@ -408,28 +415,8 @@ const collectText = () => {
                 entry.size = 0
             }
         }
-        // Only the part of the node that is on this page
-        const text = node.nodeValue
-        let i = 0
-        let piece = ''
-        while (i < text.length) {
-            const isSpace = /\s/.test(text[i])
-            let end = i + 1
-            while (end < text.length && /\s/.test(text[end]) === isSpace) end++
-            try {
-                range.setStart(node, i)
-                range.setEnd(node, end)
-                if (normalize(range.getBoundingClientRect(), offset, size)) {
-                    piece += isSpace ? ' ' : text.slice(i, end)
-                }
-            } catch (e) {
-                // skip this run
-            }
-            i = end
-        }
-        entry.text += piece
-    }
-    range.detach && range.detach()
+        entry.text += text
+    })
 
     let html = ''
     let plain = ''

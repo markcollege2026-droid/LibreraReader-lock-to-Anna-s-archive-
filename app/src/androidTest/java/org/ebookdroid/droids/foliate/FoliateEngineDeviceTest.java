@@ -495,6 +495,47 @@ public class FoliateEngineDeviceTest {
         }
     }
 
+    /** Independent of the selection/TTS comparison: neither may lose or duplicate source text. */
+    @Test
+    public void adjacentPagesPreserveTheEntireBookTextExactlyOnce() {
+        final StringBuilder expected = new StringBuilder();
+        for (int chapter = 0; chapter < TITLES.length; chapter++) {
+            expected.append(TITLES[chapter]);
+            for (int paragraph = 1; paragraph <= 12; paragraph++) {
+                expected.append("Paragraph ").append(paragraph).append(" of ").append(TITLES[chapter])
+                        .append(". ").append(PHRASES[chapter])
+                        .append(" This is paragraph ").append(paragraph)
+                        .append(" of the chapter, written out at length so that the engine")
+                        .append(" has something to paginate and something uncommonly long to measure.");
+            }
+            if (chapter == 0) expected.append("on to the third chapter and away to the web");
+        }
+        final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
+        try {
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final StringBuilder selected = new StringBuilder();
+            final StringBuilder spoken = new StringBuilder();
+            for (int page = 0; page < pages; page++) {
+                final CodecPage codecPage = document.getPageInner(page);
+                assertNotNull(codecPage);
+                try {
+                    for (TextWord[] line : codecPage.getText()) {
+                        for (TextWord word : line) if (word.w != null) selected.append(word.w);
+                    }
+                    spoken.append(stripTags(codecPage.getPageHTML()));
+                } finally {
+                    codecPage.recycle();
+                }
+            }
+            assertEquals("selection preserves the original book across column boundaries",
+                    letters(expected.toString()), letters(selected.toString()));
+            assertEquals("TTS preserves the original book across column boundaries",
+                    letters(expected.toString()), letters(spoken.toString()));
+        } finally {
+            document.recycle();
+        }
+    }
+
     /** The page's pseudo-HTML as plain text. */
     private static String stripTags(final String html) {
         return html == null ? "" : html
