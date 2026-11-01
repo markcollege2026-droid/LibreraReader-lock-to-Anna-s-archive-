@@ -29,8 +29,13 @@ jobs:
         run: |
           test -d "$ANDROID_HOME"
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+      - name: Accept SDK licenses
+        run: |
+          # yes exits with SIGPIPE after sdkmanager finishes; retain sdkmanager's status.
+          set +o pipefail
+          yes | sdkmanager --licenses
       - name: Install SDK and NDK
-        run: sdkmanager 'platforms;android-37' 'build-tools;37.0.0' 'ndk;27.2.12479018'
+        run: bash scripts/ci-command.sh sdkmanager 'platforms;android-37' 'build-tools;37.0.0' 'ndk;27.2.12479018'
       - name: Install native build dependencies
         run: |
           sudo apt-get update
@@ -44,15 +49,15 @@ jobs:
       - name: Build and link native reader libraries
         run: |
           chmod +x gradlew
-          bash Builder/ci-native.sh
+          bash scripts/ci-command.sh bash Builder/ci-native.sh
       - name: Audit network entry points
         run: python3 scripts/check-network-policy.py
       - name: Build debug APKs
-        run: ./gradlew assembleDebug --stacktrace
+        run: bash scripts/ci-command.sh ./gradlew assembleDebug --stacktrace
       - name: JVM unit tests
-        run: ./gradlew :app:testFdroidJSDebugUnitTest --stacktrace
+        run: bash scripts/ci-command.sh ./gradlew :app:testFdroidJSDebugUnitTest --stacktrace
       - name: Build release APK (CI test key, not a production signing key)
-        run: ./gradlew :app:assembleFdroidJSRelease -PciReleaseSigning --stacktrace
+        run: bash scripts/ci-command.sh ./gradlew :app:assembleFdroidJSRelease -PciReleaseSigning --stacktrace
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
