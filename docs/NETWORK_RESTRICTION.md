@@ -105,3 +105,9 @@ catalog now uses compile SDK 36, matching the existing target SDK, and PDFium
 calls have been adapted to that version; 2.0.2/2.0.3 demand API 37 in AAR metadata.
 This sacrifices the newer library's page-retention optimization but preserves
 PDF rendering without pretending an unavailable SDK is installed.
+
+The declared OkHttp version is now explicitly 4.12.0, the version already pulled
+in transitively by `okhttp-digest:3.1.1`; MockWebServer uses that same version to
+avoid a mixed-version test runtime. The pre-existing `TestSync` JVM test now
+supplies an Android storage stub instead of dereferencing android.jar's null
+`Environment.getExternalStorageDirectory()` result.

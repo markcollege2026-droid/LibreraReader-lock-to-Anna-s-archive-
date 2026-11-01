@@ -65,8 +65,20 @@ jobs:
         run: bash scripts/ci-command.sh ./gradlew assembleDebug --stacktrace
       - name: JVM unit tests
         run: bash scripts/ci-command.sh ./gradlew :app:testFdroidJSDebugUnitTest --stacktrace
+      - name: Report JVM test failures
+        if: always()
+        run: python3 scripts/report-test-failures.py
       - name: Build release APK (CI test key, not a production signing key)
         run: bash scripts/ci-command.sh ./gradlew :app:assembleFdroidJSRelease -PciReleaseSigning --stacktrace
+      - name: Upload debug and release APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: librera-restricted-apks
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            app/build/outputs/apk/fdroidJS/debug/*-uni.apk
+            app/build/outputs/apk/fdroidJS/release/*-uni.apk
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -81,15 +93,6 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: ./gradlew :app:connectedFdroidJSDebugAndroidTest --stacktrace
-      - name: Upload debug and release APKs
-        uses: actions/upload-artifact@v4
-        with:
-          name: librera-restricted-apks
-          if-no-files-found: error
-          retention-days: 14
-          path: |
-            app/build/outputs/apk/fdroidJS/debug/*-uni.apk
-            app/build/outputs/apk/fdroidJS/release/*-uni.apk
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4

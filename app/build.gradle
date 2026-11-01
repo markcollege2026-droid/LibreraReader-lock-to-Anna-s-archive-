@@ -411,7 +411,7 @@ dependencies {
     // No libDepFree/libDepPro: their SDKs bypass our URL validator.
 
 /** Testing **/
-    testImplementation("com.squareup.okhttp3:mockwebserver:3.12.6")
+    testImplementation(libs.mockwebserver)
     testImplementation(libs.junit)
     testImplementation(libs.mockito.core)
     testImplementation(libs.kxml2)
