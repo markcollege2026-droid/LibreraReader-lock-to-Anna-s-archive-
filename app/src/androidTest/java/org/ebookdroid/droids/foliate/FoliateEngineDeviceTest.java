@@ -772,7 +772,14 @@ public class FoliateEngineDeviceTest {
     // ---------------------------------------------------------------- the position anchor
 
     @Test
-    public void aBookmarkFindsItsPageAgain() {
+    public void aBookmarkFindsItsPageAgain() throws Exception {
+        // The search intentionally uses a short text anchor and returns the nearest match.
+        // Repeated prose can contain that same anchor on several pages, so it cannot establish
+        // an exact page number. Number every word in this fixture instead, including words at
+        // arbitrary page breaks, while retaining the exact page-number assertions below.
+        try (OutputStream out = new FileOutputStream(file)) {
+            out.write(epub(true));
+        }
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
             final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
@@ -1097,6 +1104,10 @@ public class FoliateEngineDeviceTest {
 
     /** A three-chapter EPUB, so the test does not depend on a book being pushed to the device. */
     private static byte[] epub() throws Exception {
+        return epub(false);
+    }
+
+    private static byte[] epub(final boolean uniqueBookmarkWords) throws Exception {
         final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         final ZipOutputStream zip = new ZipOutputStream(bytes);
 
@@ -1135,6 +1146,15 @@ public class FoliateEngineDeviceTest {
             final StringBuilder body = new StringBuilder();
             body.append("<h1>").append(TITLES[i]).append("</h1>");
             for (int p = 0; p < 12; p++) {
+                if (uniqueBookmarkWords) {
+                    body.append("<p>");
+                    for (int word = 0; word < 50; word++) {
+                        body.append("chapter").append(i + 1).append("paragraph").append(p + 1)
+                                .append("word").append(word).append(' ');
+                    }
+                    body.append("</p>");
+                    continue;
+                }
                 // Laid out the way a real book's source is - the text broken across source lines
                 // with indentation, so the whitespace between two words contains a newline and is
                 // what a line wraps on. A word carrying soft hyphens, as the conversion inserts
