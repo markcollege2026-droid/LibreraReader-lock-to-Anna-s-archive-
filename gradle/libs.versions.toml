@@ -23,7 +23,8 @@ kotlinxSerializationCore = "1.11.0"
 ksp = "2.3.12"
 legacySupportV4 = "1.0.0"
 okio = "3.18.2"
-pdfiumandroid = "2.0.3"
+# 2.0.2+ requires unavailable Android API 37; keep the API-36-compatible release.
+pdfiumandroid = "2.0.0"
 pdfmpCompose = "1.0.13"
 
 recyclerview = "1.4.0"
@@ -40,7 +41,7 @@ okioParent="1.17.6"
 okhttpDigest="3.1.1"
 
 targetSdk="36"
-compileSdk="37"
+compileSdk="36"
 
 minSdk="24"
 jvmTarget = "21"

@@ -51,7 +51,7 @@ public class PdfiumContext extends AbstractCodecContext {
                     // A page or document used after it was closed logs instead of throwing: the
                     // decode threads here race with recycle() the same way they do with MuPDF.
                     ConfigKt.setPdfiumConfig(
-                            new Config(new DefaultLogger(), AlreadyClosedBehavior.LOG, PAGE_RETENTION));
+                            new Config(new DefaultLogger(), AlreadyClosedBehavior.LOG));
                     LOG.d("PDFIUM! core created");
                 } catch (Throwable e) {
                     unavailable = true;
@@ -62,12 +62,7 @@ public class PdfiumContext extends AbstractCodecContext {
         }
     }
 
-    /**
-     * How many pages PDFium keeps open after Librera released them. Librera renders a page in
-     * tiles and reopens the same page for its text and links right after, so retaining a few
-     * makes those reopens free.
-     */
-    private static final int PAGE_RETENTION = 8;
+
 
     /**
      * @return <code>true</code> when PDFium can be used on this device

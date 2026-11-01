@@ -178,8 +178,12 @@ public class PdfiumDocument extends AbstractCodecDocument {
             if (isRecycled()) {
                 return null;
             }
-            // The size is read off the document, without opening the page
-            final Size size = document.getPageSize(pageNumber, POINTS_DPI);
+            // The API-36-compatible PDFium release exposes sizes on an open page.
+            final Size size;
+            try (PdfPage page = document.openPage(pageNumber)) {
+                if (page == null) return null;
+                size = page.getPageSize(POINTS_DPI);
+            }
             if (size == null || size.getWidth() <= 0 || size.getHeight() <= 0) {
                 return null;
             }

@@ -99,4 +99,9 @@ are required before claiming APK delivery or emulator verification.
 
 The first CI attempts exposed an upstream build prerequisite issue: Google SDK
 Manager does not provide the fork's original `platforms;android-37` package.
-The version catalog now uses compile SDK 36, matching the existing target SDK.
+This was confirmed against preview and obsolete SDK channels as well. The version
+catalog now uses compile SDK 36, matching the existing target SDK, and PDFium
+2.0.0 (the last API-36-compatible release). Its page-size lookup and configuration
+calls have been adapted to that version; 2.0.2/2.0.3 demand API 37 in AAR metadata.
+This sacrifices the newer library's page-retention optimization but preserves
+PDF rendering without pretending an unavailable SDK is installed.

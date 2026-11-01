@@ -35,10 +35,7 @@ jobs:
           set +o pipefail
           yes | sdkmanager --licenses
       - name: Install SDK and NDK
-        run: |
-          sdkmanager --list --channel=3 --include_obsolete > "$RUNNER_TEMP/sdk-packages.txt"
-          grep 'platforms;android-3' "$RUNNER_TEMP/sdk-packages.txt" | while IFS= read -r line; do echo "::notice::$line"; done
-          bash scripts/ci-command.sh sdkmanager --channel=3 --include_obsolete 'platforms;android-37' 'build-tools;36.0.0' 'ndk;27.2.12479018'
+        run: bash scripts/ci-command.sh sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.2.12479018'
       - name: Check dependencies and compile Java before the expensive native build
         run: bash scripts/ci-command.sh ./gradlew :app:checkFdroidJSDebugAarMetadata :app:compileFdroidJSDebugJavaWithJavac --stacktrace
       - name: Install native build dependencies
