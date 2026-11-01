@@ -131,13 +131,18 @@ const relocated = since => {
  * waits for that. Frames - what painted() waits for - change nothing here, and waiting for two of
  * them per section was half the time a walk of the book took.
  */
-const laidOut = () => {
+const laidOut = async () => {
     const current = contents()
-    const fonts = current && current.doc ? current.doc.fonts : null
-    if (!fonts || fonts.status !== 'loading') return Promise.resolve()
-    // The paginator's own handler was registered on the same promise first, so it has relaid
-    // the section out by the time this resolves. The timer is for a font that never arrives.
-    return Promise.race([fonts.ready, new Promise(resolve => setTimeout(resolve, FONTS_TIMEOUT_MS))])
+    const doc = current && current.doc
+    // Font loads can start lazily on the first layout. Reading status before forcing layout
+    // can see "loaded" while the styled text is still about to request its actual font.
+    if (doc && doc.documentElement) void doc.documentElement.offsetHeight
+    const fonts = doc && doc.fonts
+    if (!fonts) return
+    // Always await ready, even if already loaded, so the paginator's earlier ready handler has
+    // expanded/re-columnised the section before we read its geometry.
+    await Promise.race([fonts.ready, new Promise(resolve => setTimeout(resolve, FONTS_TIMEOUT_MS))])
+    if (doc.documentElement) void doc.documentElement.offsetHeight
 }
 
 /** The section document currently loaded, or null. */
@@ -651,6 +656,7 @@ const handlers = {
         applyStyles()
 
         await renderer.goTo({ index: 0, anchor: 0 })
+        await laidOut()
         await painted()
         // Where the open went: reading the book across the bridge, foliate parsing its package
         // and contents, and laying out and drawing the first section
@@ -762,6 +768,9 @@ const handlers = {
     async goTo({ index, fraction }) {
         const since = relocateCount
         await view.renderer.goTo({ index, anchor: fraction })
+        // Loading a section also applies the reader's font. Animation frames alone can finish
+        // before that font loads, reflowing the page between selection, TTS and bitmap reads.
+        await laidOut()
         await painted()
         // The count has to describe the page this call landed on, and `visible` only becomes that
         // page's range when the paginator relocates - which it does after the frames above, not
@@ -775,6 +784,7 @@ const handlers = {
 
     /** Waits for a re-columnisation to finish, after the page size changed. */
     async settle() {
+        await laidOut()
         await painted()
         await painted()
         return {}

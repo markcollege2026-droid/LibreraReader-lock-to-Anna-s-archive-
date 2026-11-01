@@ -61,8 +61,10 @@ jobs:
           key: ${{ steps.native-cache.outputs.cache-primary-key }}
       - name: Audit network entry points
         run: python3 scripts/check-network-policy.py
-      - name: Foliate text geometry regression tests
-        run: node --test scripts/tests/*.test.cjs
+      - name: Foliate and test-reporting regression tests
+        run: |
+          node --test scripts/tests/*.test.cjs
+          python3 -m unittest discover -s scripts/tests -p 'test_*.py'
       - name: Build debug APKs
         run: bash scripts/ci-command.sh ./gradlew assembleDebug --stacktrace
       - name: JVM unit tests

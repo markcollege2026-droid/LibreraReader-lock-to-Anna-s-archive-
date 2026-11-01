@@ -130,7 +130,7 @@ ignores zero-area caret/soft-hyphen rectangles, and rejects off-page fragments o
 both axes. It checks the final painted fragment of each growing DOM range, not
 the cumulative bounding box's bottom.
 
-Regression coverage includes six dependency-free Node tests (some/thing on
+Regression coverage includes eight dependency-free Node tests (some/thing on
 adjacent columns, an off-page word with an on-page caret, equal baselines in
 different columns, and vertical clipping). The original implementation fails
 these boundary checks. A separate Android test also concatenates **every page**
@@ -148,3 +148,13 @@ Download the latest `librera-restricted-apks` and `test-results` artifacts from
 [Android CI](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/workflows/ci.yml).
 APKs are evaluation builds, the release uses a CI test key (not a production key),
 and artifacts expire after 14 days.
+
+Follow-up emulator checks also exposed asynchronous rendering problems. Navigation
+now waits for the section's fonts, after forcing layout to initiate lazy font
+requests, before exposing geometry; two Node tests hold font readiness pending to
+verify that wait. Bitmap capture separately waits for Android WebView's visual-state
+callback with offscreen preraster enabled, rather than assuming JavaScript frames
+mean Chromium has composited the parked view. The pixel assertions run against
+three freshly opened WebViews. Relayout tests use Foliate's own font preference
+(not MuPDF's), and the exact-page bookmark test uses uniquely numbered words so
+its short search anchor cannot occur on several pages of repeated prose.

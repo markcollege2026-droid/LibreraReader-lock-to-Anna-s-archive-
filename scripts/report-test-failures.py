@@ -2,6 +2,7 @@
 """Expose JUnit diagnostics through the Checks API as well as downloadable HTML reports."""
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import re
 
 count = failures = assumptions = 0
 paths = list(Path('app/build/test-results').rglob('TEST-*.xml'))
@@ -13,7 +14,13 @@ for path in paths:
         for failure in list(case.findall('failure')) + list(case.findall('error')):
             # Some connected-test XML encodes JUnit assumptions as failure elements.
             # Missing optional device fixtures are skips, not broken application assertions.
-            if failure.get('type', '').endswith('AssumptionViolatedException'):
+            kind = failure.get('type', '')
+            diagnostic = (failure.text or failure.get('message', '')).strip()
+            # Connected-test XML can omit type and put the exception on the first line instead.
+            untyped_assumption = not kind and re.match(
+                r'^org\.junit\.(?:internal\.)?AssumptionViolatedException(?::|$)', diagnostic)
+            if kind in ('org.junit.AssumptionViolatedException',
+                        'org.junit.internal.AssumptionViolatedException') or untyped_assumption:
                 assumptions += 1
                 continue
             failures += 1
@@ -23,4 +30,4 @@ for path in paths:
             text = f"{case.get('classname')}.{case.get('name')}:\n" + '\n'.join(lines)
             text = text[:12000].replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
             print(f'::error::{text}')
-print(f'JUnit XML summary: {count} tests, {failures} failures/errors, {assumptions} assumption skips')
+print(f'::notice::JUnit XML summary: {count} tests, {failures} failures/errors, {assumptions} assumption skips')

@@ -113,3 +113,55 @@ test('normalization rejects off-page and zero-area rectangles on both axes', () 
     }
     assert.notEqual(probe.normalize(rect(10, 10, 20, 20), offset, size), null)
 })
+
+// A font may still report "loaded" until the styled document's first forced layout.
+function delayedFontBridge() {
+    let releaseFont
+    let measured = 0
+    const fonts = { status: 'loaded', ready: new Promise(resolve => { releaseFont = resolve }) }
+    const doc = {
+        fonts,
+        documentElement: {
+            get offsetHeight() { measured++; fonts.status = 'loading'; return 100 },
+        },
+    }
+    const context = vm.createContext({
+        window: { addEventListener() {} },
+        document: { documentElement: { offsetHeight: 100 } },
+        requestAnimationFrame: callback => queueMicrotask(callback),
+        // Keep timeout backstops pending, without holding the Node test process open.
+        setTimeout() {},
+        doc,
+    })
+    vm.runInContext(source + `
+        view = { renderer: {
+            getContents: () => [{ doc }],
+            goTo: async () => { relocateCount++ },
+        } };
+        globalThis.probe = { laidOut, goTo: handlers.goTo };
+    `, context)
+    return { ...context.probe, measured: () => measured, releaseFont }
+}
+
+test('layout starts lazy font loading before waiting for font readiness', async () => {
+    const probe = delayedFontBridge()
+    let finished = false
+    const layout = probe.laidOut().then(() => { finished = true })
+    await new Promise(setImmediate)
+    assert.ok(probe.measured() > 0, 'first layout must initiate the font request')
+    assert.equal(finished, false, 'loaded status before layout cannot bypass the font wait')
+    probe.releaseFont()
+    await layout
+    assert.equal(finished, true)
+})
+
+test('page navigation waits for its section font before exposing text geometry', async () => {
+    const probe = delayedFontBridge()
+    let finished = false
+    const navigation = probe.goTo({ index: 0, fraction: 0 }).then(() => { finished = true })
+    await new Promise(setImmediate)
+    assert.equal(finished, false, 'animation frames cannot stand in for font readiness')
+    probe.releaseFont()
+    await navigation
+    assert.equal(finished, true)
+})
