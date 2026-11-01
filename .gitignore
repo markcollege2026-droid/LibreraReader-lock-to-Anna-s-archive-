@@ -35,3 +35,9 @@ google-services.*
 /Builder/mupdf-1.28.4/
 /Builder/mupdf-1.28.5/
 /.claude/
+
+# Locally generated native outputs / signing material
+/app/src/main/jniLibs/
+*.jks
+*.keystore
+*.pkcs12

@@ -217,7 +217,7 @@ public class DragingDialogs {
             return;
         }
         LOG.d("webView DragingDialog", url);
-        final WebView wv = new WebView(anchor.getContext());
+        final WebView wv = new com.foobnix.network.RestrictedWebView(anchor.getContext());
         DragingPopup dialog = new DragingPopup(url, anchor, 300, 440) {
 
             @Override public void beforeCreate() {
@@ -233,7 +233,7 @@ public class DragingDialogs {
                               });
             }
             @Override @SuppressLint("NewApi") public View getContentView(LayoutInflater inflater) {
-               // final WebView wv = new WebView(anchor.getContext());
+               // final WebView wv = new com.foobnix.network.RestrictedWebView(anchor.getContext());
                 wv.getSettings().setUserAgentString(OPDS.USER_AGENT);
                 wv.getSettings().setJavaScriptEnabled(true);
                 wv.getSettings().setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
@@ -241,12 +241,7 @@ public class DragingDialogs {
                 wv.loadUrl(url);
 
                 wv.setFocusable(true);
-                wv.setWebViewClient(new WebViewClient() {
-                    @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        view.loadUrl(url);
-                        return true;
-                    }
-                });
+                wv.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient());
 
                 return wv;
             }

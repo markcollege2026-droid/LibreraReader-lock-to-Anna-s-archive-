@@ -26,7 +26,7 @@ public class WebViewHepler {
             // WebView.enableSlowWholeDocumentDraw();
         }
 
-        webView = new WebView(c);
+        webView = new com.foobnix.network.RestrictedWebView(c);
         webView.layout(0, 0, Dips.screenWidth(), Dips.screenHeight());
 
         webView.getSettings().setJavaScriptEnabled(true);
@@ -38,7 +38,7 @@ public class WebViewHepler {
     public static void getBitmap(String path, final ResultResponse<Bitmap> res) {
 
         final long init = System.currentTimeMillis();
-        webView.setWebViewClient(new WebViewClient() {
+        webView.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient() {
 
             @Override
             public void onPageFinished(WebView view, String url) {
@@ -53,13 +53,6 @@ public class WebViewHepler {
                 webView.draw(c);
                 res.onResultRecive(bitmap);
 
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                LOG.d("WebView shouldOverrideUrlLoading", url);
-                view.loadUrl(url);
-                return true;
             }
         });
         webView.loadUrl("file://" + path);

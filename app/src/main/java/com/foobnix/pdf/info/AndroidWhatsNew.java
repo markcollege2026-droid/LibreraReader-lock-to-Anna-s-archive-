@@ -122,14 +122,7 @@ public class AndroidWhatsNew {
         wv.loadUrl(getLangUrl(c),headers);
 
         wv.setFocusable(true);
-        wv.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
-            }
-
-        });
+        wv.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient());
 
         TextView wiki = (TextView) inflate.findViewById(R.id.wiki);
         TxtUtils.underlineTextView(wiki);

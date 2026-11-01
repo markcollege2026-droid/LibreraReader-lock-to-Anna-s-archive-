@@ -2753,14 +2753,9 @@ public class PrefFragment2 extends UIFragment {
                 AlertDialog.Builder alert = new AlertDialog.Builder(getActivity());
                 alert.setTitle(R.string.licenses_for_libraries);
 
-                WebView wv = new WebView(getActivity());
+                WebView wv = new com.foobnix.network.RestrictedWebView(getActivity());
                 wv.loadUrl("file:///android_asset/licenses.html");
-                wv.setWebViewClient(new WebViewClient() {
-                    @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                        view.loadUrl(url);
-                        return true;
-                    }
-                });
+                wv.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient());
 
                 alert.setView(wv);
                 alert.setNegativeButton(R.string.close, new DialogInterface.OnClickListener() {

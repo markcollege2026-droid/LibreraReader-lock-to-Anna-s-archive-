@@ -13,7 +13,7 @@
         android:orientation="vertical"
         android:padding="8dip" >
 
-        <WebView
+        <com.foobnix.network.RestrictedWebView
             android:layout_weight="1"
             android:id="@+id/webView2"
             android:layout_width="match_parent"

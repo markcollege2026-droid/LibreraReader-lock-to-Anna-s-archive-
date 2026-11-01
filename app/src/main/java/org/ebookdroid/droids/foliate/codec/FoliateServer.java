@@ -28,7 +28,7 @@ import java.util.Map;
 class FoliateServer {
 
     /** The origin the shell is served from. Not a real host; nothing leaves the device. */
-    static final String ORIGIN = "https://librera.foliate";
+    static final String ORIGIN = "https://annas-archive.librera.invalid";
 
     static final String SHELL_URL = ORIGIN + "/librera.html";
 
@@ -89,7 +89,7 @@ class FoliateServer {
         }
         final String url = request.getUrl().toString();
         LOG.d("FOLIATE!req", url);
-        if (!url.startsWith(ORIGIN)) {
+        if (!url.startsWith(ORIGIN + "/")) {
             // foliate reads the book inside the page and hands its sections and resources to the
             // DOM as blob: URLs, so those are the book's own content and the WebView serves them
             // from memory - there is nothing here to serve and nothing to refuse.

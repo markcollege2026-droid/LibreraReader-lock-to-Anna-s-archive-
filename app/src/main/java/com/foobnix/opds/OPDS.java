@@ -42,7 +42,7 @@ public class OPDS {
     public static final String CODE_401 = "401";
     static Cache cache = new Cache(CacheZipUtils.CACHE_WEB, 5 * 1024 * 1024);
 
-    public static OkHttpClient.Builder builder = new OkHttpClient.Builder()//
+    public static OkHttpClient.Builder builder = com.foobnix.network.RestrictedHttpClient.newBuilder()//
             .cookieJar(new WebviewCookieHandler())//
             .connectTimeout(20, TimeUnit.SECONDS)//
             .writeTimeout(20, TimeUnit.SECONDS)//
@@ -61,17 +61,8 @@ public class OPDS {
 
             @Override
             public void run() {
-                if (AppState.get().proxyEnable && TxtUtils.isNotEmpty(AppState.get().proxyServer) && AppState.get().proxyPort != 0) {
-                    Type http = AppState.PROXY_SOCKS.equals(AppState.get().proxyType) ? Type.SOCKS : Type.HTTP;
-                    LOG.d("Proxy: Server", http.name(), AppState.get().proxyServer, AppState.get().proxyPort);
-                    builder.proxy(new Proxy(http, new InetSocketAddress(AppState.get().proxyServer, AppState.get().proxyPort)));
-                    if (TxtUtils.isNotEmpty(AppState.get().proxyUser)) {
-                        LOG.d("Proxy: User", AppState.get().proxyUser, AppState.get().proxyPassword);
-                        builder.proxyAuthenticator(new BasicAuthenticator(new Credentials(AppState.get().proxyUser, AppState.get().proxyPassword)));
-                    }
-                } else {
-                    builder.proxy(null);
-                }
+                // Arbitrary proxies create connections to non-allowed hosts. Always connect direct.
+                builder.proxy(Proxy.NO_PROXY);
                 client = builder.build();
             }
         }, "@T buildProxy").start();

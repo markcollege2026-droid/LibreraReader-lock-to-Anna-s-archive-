@@ -43,6 +43,7 @@ public class Urls {
         LOG.d(">>> open", url);
         url = url.replace("file://", "https://");
         try {
+            com.foobnix.network.NetworkPolicy.requireAllowed(url);
             Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             browserIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             a.startActivity(browserIntent);
@@ -61,19 +62,12 @@ public class Urls {
         EditText keyboardHack = new EditText(a);
         keyboardHack.setVisibility(View.GONE);
 
-        final WebView wv = new WebView(a);
+        final WebView wv = new com.foobnix.network.RestrictedWebView(a);
         wv.getSettings().setUserAgentString(OPDS.USER_AGENT);
         wv.getSettings().setJavaScriptEnabled(true);
         wv.loadUrl(url);
         wv.setFocusable(true);
-        wv.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
-            }
-
-        });
+        wv.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient());
 
         wrapper.setOrientation(LinearLayout.VERTICAL);
         wrapper.addView(wv, LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);

@@ -185,7 +185,15 @@ class FoliateRenderer {
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     private void create() {
         final FoliateServer server = new FoliateServer(context, bookPath);
-        final WebView local = new WebView(context);
+        final WebView local = new com.foobnix.network.RestrictedWebView(context) {
+            @Override
+            protected boolean mayLoad(String url) {
+                // This reserved origin is ALWAYS served from memory by FoliateServer;
+                // never let it fall through to the network client or Chromium networking.
+                return "about:blank".equals(url) || (url != null
+                        && url.startsWith(FoliateServer.ORIGIN + "/"));
+            }
+        };
         final WebSettings settings = local.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setSupportZoom(false);
@@ -195,16 +203,14 @@ class FoliateRenderer {
         settings.setUseWideViewPort(false);
         settings.setLoadWithOverviewMode(false);
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
-        // Everything the page may read is served by FoliateServer over its own origin, and
-        // anything off it is refused there - so the shell itself, which is an https URL, still
-        // loads. setBlockNetworkLoads is deliberately not used: it would be a second gate in
-        // front of the interceptor that the shell's own load has to pass through too.
+        // FoliateServer serves this reserved origin entirely from memory. Chromium's native
+        // network loads remain disabled even if an unhandled resource slips past the server.
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(false);
         settings.setGeolocationEnabled(false);
         settings.setTextZoom(100);
 
-        local.setWebViewClient(new WebViewClient() {
+        local.setWebViewClient(new com.foobnix.network.RestrictedWebViewClient() {
             @Override
             public WebResourceResponse shouldInterceptRequest(final WebView view,
                                                               final WebResourceRequest request) {

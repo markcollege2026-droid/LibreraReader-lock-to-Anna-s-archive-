@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.googleServices)
 }
 
 def taskName = getGradle().getStartParameter().getTaskRequests().toString()
@@ -77,10 +76,12 @@ android {
 
     signingConfigs {
         release {
-            storeFile file(RELEASE_STORE_FILE)
-            storePassword RELEASE_STORE_PASSWORD
-            keyAlias RELEASE_KEY_ALIAS
-            keyPassword RELEASE_KEY_PASSWORD
+            if (project.hasProperty('RELEASE_STORE_FILE')) {
+                storeFile file(project.property('RELEASE_STORE_FILE'))
+                storePassword project.findProperty('RELEASE_STORE_PASSWORD')
+                keyAlias project.findProperty('RELEASE_KEY_ALIAS')
+                keyPassword project.findProperty('RELEASE_KEY_PASSWORD')
+            }
         }
     }
 
@@ -90,7 +91,9 @@ android {
             minifyEnabled = true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             //shrinkResources = false
-            signingConfig = signingConfigs.release
+            // CI artifacts are installable test-key builds, never production-signed releases.
+            signingConfig = project.hasProperty('ciReleaseSigning') ? signingConfigs.debug :
+                    (project.hasProperty('RELEASE_STORE_FILE') ? signingConfigs.release : null)
             debuggable = false
         }
         debug {
@@ -175,7 +178,7 @@ android {
                     appIcon      : "@mipmap/icon_pdf_pro",
                     appRoundIcon : "@mipmap/icon_pdf_pro",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : pro_appGdriveKey,
+                    appGdriveKey : "",
                     admobAppId   : "",
                     admobBannerId: "",
                     admobFullId  : "",
@@ -192,11 +195,11 @@ android {
                     appIcon      : "@mipmap/icon_pdf_reader",
                     appRoundIcon : "@mipmap/icon_pdf_reader",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : librera_appGdriveKey,
-                    admobAppId   : librera_admobAppId,
-                    admobBannerId: librera_admobBannerId,
-                    admobFullId  : librera_admobFullId,
-                    admobRewardId  : librera_admobRewardId,
+                    appGdriveKey : "",
+                    admobAppId   : "",
+                    admobBannerId: "",
+                    admobFullId  : "",
+                    admobRewardId  : "",
                     appSafeMode  : "false"
             ]
         }
@@ -209,7 +212,7 @@ android {
                     appIcon      : "@mipmap/icon_pdf_pro",
                     appRoundIcon : "@mipmap/icon_pdf_pro",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : pro_appGdriveKey,
+                    appGdriveKey : "",
                     admobAppId   : "",
                     admobBannerId: "",
                     admobFullId  : "",
@@ -225,11 +228,11 @@ android {
                     appIcon      : "@mipmap/icon_pdf_classic",
                     appRoundIcon : "@mipmap/launcher_classic",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : pdf_classic_appGdriveKey,
-                    admobAppId   : pdf_classic_admobAppId,
-                    admobBannerId: pdf_classic_admobBannerId,
-                    admobFullId  : pdf_classic_admobFullId,
-                    admobRewardId: pdf_classic_admobRewardId,
+                    appGdriveKey : "",
+                    admobAppId   : "",
+                    admobBannerId: "",
+                    admobFullId  : "",
+                    admobRewardId: "",
                     appSafeMode  : "true"
             ]
         }
@@ -241,11 +244,11 @@ android {
                     appIcon      : "@mipmap/icon_pdf_droid",
                     appRoundIcon : "@mipmap/launcher_droid",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : ebooka_appGdriveKey,
-                    admobAppId   : ebooka_admobAppId,
-                    admobBannerId: ebooka_admobBannerId,
-                    admobFullId  : ebooka_admobFullId,
-                    admobRewardId: ebooka_admobRewardId,
+                    appGdriveKey : "",
+                    admobAppId   : "",
+                    admobBannerId: "",
+                    admobFullId  : "",
+                    admobRewardId: "",
                     appSafeMode  : "false"
             ]
         }
@@ -257,11 +260,11 @@ android {
                     appIcon      : "@mipmap/icon_pdf_2",
                     appRoundIcon : "@mipmap/launcher_pdf_v2",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : pdf_v2_appGdriveKey,
-                    admobAppId   : pdf_v2_admobAppId,
-                    admobBannerId: pdf_v2_admobBannerId,
-                    admobFullId  : pdf_v2_admobFullId,
-                    admobRewardId: pdf_v2_admobRewardId,
+                    appGdriveKey : "",
+                    admobAppId   : "",
+                    admobBannerId: "",
+                    admobFullId  : "",
+                    admobRewardId: "",
                     appSafeMode  : "false"
             ]
         }
@@ -273,11 +276,11 @@ android {
                     appIcon      : "@mipmap/icon_tts_reader_app",
                     appRoundIcon : "@mipmap/launcher_tts_reader_app",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : tts_reader_appGdriveKey,
-                    admobAppId   : tts_reader_admobAppId,
-                    admobBannerId: tts_reader_admobBannerId,
-                    admobFullId  : tts_reader_admobFullId,
-                    admobRewardId: tts_reader_admobRewardId,
+                    appGdriveKey : "",
+                    admobAppId   : "",
+                    admobBannerId: "",
+                    admobFullId  : "",
+                    admobRewardId: "",
                     appSafeMode  : "false"
             ]
         }
@@ -289,11 +292,11 @@ android {
                     appIcon      : "@mipmap/icon_epub_reader",
                     appRoundIcon : "@mipmap/launcher_epub_reader",
                     appWebClientId: project.findProperty("appWebClientId") ?: "",
-                    appGdriveKey : epub_reader_appGdriveKey,
-                    admobAppId   : epub_reader_admobAppId,
-                    admobBannerId: epub_reader_admobBannerId,
-                    admobFullId  : epub_reader_admobFullId,
-                    admobRewardId: epub_reader_admobRewardId,
+                    appGdriveKey : "",
+                    admobAppId   : "",
+                    admobBannerId: "",
+                    admobFullId  : "",
+                    admobRewardId: "",
                     appSafeMode  : "false"
             ]
         }
@@ -305,7 +308,6 @@ android {
         // :libDepPro, which those flavours do not depend on). src/<flavour>/java keeps only what
         // is really that one flavour's, which is its LibreraBuildConfig.
         fdroid {
-            java.srcDirs += 'src/noGms/java'
             assets.srcDirs = ['src/fdroid/assets', 'src/fdroid/assets/']
         }
         // The MuPDF-free builds take their native libraries from src/noMupdf/jniLibs: the
@@ -313,7 +315,6 @@ android {
         // src/main/jniLibs is part of every variant too, and the flavour's copies win over it;
         // libmupdf.so, which only it has, is dropped - see the jniLibs excludes further down.
         fdroidJS {
-            java.srcDirs += 'src/noGms/java'
             jniLibs.srcDirs += 'src/noMupdf/jniLibs'
             // Everything but the flavour's own LibreraBuildConfig is the F-Droid flavour's
             manifest.srcFile 'src/fdroid/AndroidManifest.xml'
@@ -324,12 +325,9 @@ android {
             jniLibs.srcDirs += 'src/noMupdf/jniLibs'
             manifest.srcFile 'src/pro/AndroidManifest.xml'
         }
-        // The "Sign in with Google" sheet needs Credential Manager and Google's own credential
-        // type, both of them :libDepPro's. The flavours built without that module take the
-        // stand-in for it that sits with the other ones in src/noGms/java.
-        ['librera', 'pro', 'proJS', 'pdf_classic', 'ebooka', 'pdf_v2', 'tts_reader', 'epub_reader'].each { gms ->
-            getByName(gms).java.srcDirs += 'src/gms/java'
-        }
+        // This fork must not ship independent SDK network stacks. All variants use
+        // the existing offline Drive/auth/billing stubs and libPro's no-op ads.
+        main.java.srcDirs += 'src/noGms/java'
 
         // code for both JVM and device tests, like the old footnote code to compare with
         test.java.srcDirs += 'src/sharedTest/java'
@@ -357,10 +355,7 @@ android {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    proImplementation project(':libPro')
-    fdroidImplementation project(':libPro')
-    proJSImplementation project(':libPro')
-    fdroidJSImplementation project(':libPro')
+    implementation project(':libPro')
 
     //implementation project(":shared")
 
@@ -413,30 +408,10 @@ dependencies {
 
 
 
-    def dep_free = project(':libDepFree')
-
-
-    libreraImplementation dep_free
-    pdf_v2Implementation dep_free
-    ebookaImplementation dep_free
-    tts_readerImplementation dep_free
-    pdf_classicImplementation dep_free
-    epub_readerImplementation dep_free
-    def dep_pro = project(':libDepPro')
-
-
-    libreraImplementation dep_pro
-    pdf_v2Implementation dep_pro
-    ebookaImplementation dep_pro
-    tts_readerImplementation dep_pro
-    pdf_classicImplementation dep_pro
-    epub_readerImplementation dep_pro
-    proImplementation dep_pro
-    // fdroidJS, like fdroid, is built without Google Play services: the stand-ins for them live
-    // in src/noGms/java.
-    proJSImplementation dep_pro
+    // No libDepFree/libDepPro: their SDKs bypass our URL validator.
 
 /** Testing **/
+    testImplementation("com.squareup.okhttp3:mockwebserver:3.12.6")
     testImplementation(libs.junit)
     testImplementation(libs.mockito.core)
     testImplementation(libs.kxml2)
