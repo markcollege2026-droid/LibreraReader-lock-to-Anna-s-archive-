@@ -18,6 +18,7 @@ import com.foobnix.ext.CacheZipUtils;
 import com.foobnix.model.AppProfile;
 import com.foobnix.model.AppState;
 import com.foobnix.pdf.info.AppsConfig;
+import com.foobnix.pdf.info.Engines;
 import com.foobnix.pdf.info.model.AnnotationType;
 import com.foobnix.sys.Colors;
 import com.foobnix.sys.TempHolder;
@@ -80,6 +81,8 @@ public class PdfiumEngineDeviceTest {
 
     @Before
     public void setUp() throws Exception {
+        org.junit.Assume.assumeTrue("This comparison suite needs both MuPDF and PDFium",
+                Engines.IS_MUPDF);
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         AppsConfig.IS_LOG = false;
         // Touching AppsConfig loads libmupdf.so
@@ -102,6 +105,7 @@ public class PdfiumEngineDeviceTest {
 
     @After
     public void tearDown() {
+        if (!Engines.IS_MUPDF) return;
         AppState.get().pdfEngine = engineBefore;
         if (file != null) {
             file.delete();

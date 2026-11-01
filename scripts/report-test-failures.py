@@ -4,7 +4,9 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 count = failures = 0
-for path in Path('app/build/test-results').rglob('TEST-*.xml'):
+paths = list(Path('app/build/test-results').rglob('TEST-*.xml'))
+paths += list(Path('app/build/outputs/androidTest-results').rglob('TEST-*.xml'))
+for path in paths:
     suite = ET.parse(path).getroot()
     count += int(suite.get('tests', 0))
     for case in suite.iter('testcase'):

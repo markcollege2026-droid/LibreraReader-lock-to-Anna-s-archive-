@@ -54,7 +54,7 @@ bash Builder/ci-native.sh
 ./gradlew :app:testFdroidJSDebugUnitTest
 ./gradlew :app:assembleFdroidJSRelease -PciReleaseSigning
 # With an emulator/device running:
-./gradlew :app:connectedFdroidJSDebugAndroidTest
+./gradlew :app:connectedFdroidDebugAndroidTest :app:connectedFdroidJSDebugAndroidTest
 ```
 
 `Builder/ci-native.sh` builds the fork's patched native reader libraries and
@@ -65,8 +65,9 @@ ignored, not checked into Git. No Firebase file or advertising keys are required
 
 `.github/workflows/ci.yml` runs on every push and pull request (also manually),
 caches Gradle/native outputs, assembles debug APKs, runs JVM tests, assembles a
-minified release APK, boots a headless API 35 x86_64 emulator, and runs the full
-FDroid-JS instrumentation suite. Shared policy tests run on both JVM and device.
+minified release APK, boots a headless API 35 x86_64 emulator, and runs both FDroid and FDroid-JS instrumentation suites. The PDFium/MuPDF
+comparison suite runs on FDroid and is feature-gated out of FDroid-JS, where
+MuPDF and the engine-choice setting deliberately do not exist. Shared policy tests run on both JVM and device.
 An entry-point audit catches common newly introduced unguarded clients; it is a
 regression tripwire, not a substitute for code review.
 
