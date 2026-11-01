@@ -109,7 +109,7 @@ public class FoliateEngineDeviceTest {
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
 
         engineBefore = AppState.get().epubEngine;
-        fontBefore = BookCSS.get().fontSizeSp;
+        fontBefore = BookCSS.get().fontSizeSpFoliate;
         baseCssBefore = AppState.get().epubFoliateBaseCss;
 
         file = new File(context.getCacheDir(), "foliate-engine-test.epub");
@@ -124,7 +124,7 @@ public class FoliateEngineDeviceTest {
     @After
     public void tearDown() {
         AppState.get().epubEngine = engineBefore;
-        BookCSS.get().fontSizeSp = fontBefore;
+        BookCSS.get().fontSizeSpFoliate = fontBefore;
         AppState.get().epubFoliateBaseCss = baseCssBefore;
         if (file != null) {
             file.delete();
@@ -168,7 +168,7 @@ public class FoliateEngineDeviceTest {
         CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         final int pages;
         try {
-            pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             // Three chapters, so at least three pages, and a real number rather than an estimate
             assertTrue("a page per chapter at least, got " + pages, pages >= TITLES.length);
             assertTrue("and not an absurd number, got " + pages, pages < 1000);
@@ -187,7 +187,7 @@ public class FoliateEngineDeviceTest {
         document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
             final long started = System.currentTimeMillis();
-            final int again = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int again = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final long took = System.currentTimeMillis() - started;
             assertEquals("the same count on the second open", pages, again);
             assertTrue("and it came from the cache, took " + took + "ms", took < 3000);
@@ -198,19 +198,20 @@ public class FoliateEngineDeviceTest {
 
     @Test
     public void aBiggerFontMeansMorePages() {
+        // Foliate has its own font preference, read when the renderer opens the book.
+        BookCSS.get().fontSizeSpFoliate = 14;
         CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         final int small;
         try {
-            BookCSS.get().fontSizeSp = 14;
-            small = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            small = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
         } finally {
             document.recycle();
         }
 
-        BookCSS.get().fontSizeSp = 34;
+        BookCSS.get().fontSizeSpFoliate = 34;
         document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int large = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int large = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             assertTrue("a larger font paginates into more pages: " + small + " -> " + large,
                     large > small);
         } finally {
@@ -229,7 +230,7 @@ public class FoliateEngineDeviceTest {
     public void noPageOfTextDrawsBlank() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             int blank = 0;
             final int checked = Math.min(pages, 12);
             for (int page = 0; page < checked; page++) {
@@ -268,7 +269,7 @@ public class FoliateEngineDeviceTest {
     public void pagesRender() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final CodecPage page = document.getPage(0);
             assertNotNull(page);
 
@@ -318,7 +319,7 @@ public class FoliateEngineDeviceTest {
     public void pagesAreDrawnWhileOthersReadTheBook() throws Exception {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final int count = Math.min(5, pages);
 
             // What each page looks like with nothing else going on
@@ -395,7 +396,7 @@ public class FoliateEngineDeviceTest {
     public void wordsAreSelectableAndOnThePage() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final CodecPage page = document.getPage(0);
             final TextWord[][] text = page.getText();
             assertNotNull(text);
@@ -463,7 +464,7 @@ public class FoliateEngineDeviceTest {
     public void everyWordOfThePageIsSelectable() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             int compared = 0;
             for (int page = 0; page < Math.min(pages, 8); page++) {
                 final CodecPage codecPage = document.getPageInner(page);
@@ -512,7 +513,7 @@ public class FoliateEngineDeviceTest {
         }
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final StringBuilder selected = new StringBuilder();
             final StringBuilder spoken = new StringBuilder();
             for (int page = 0; page < pages; page++) {
@@ -562,7 +563,7 @@ public class FoliateEngineDeviceTest {
     public void thePageTextIsReadableByTts() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final String html = document.getPage(0).getPageHTML();
             assertNotNull(html);
             assertTrue("a paragraph was written: " + html, html.contains("<p>") && html.contains("</p>"));
@@ -577,7 +578,7 @@ public class FoliateEngineDeviceTest {
     public void linksAreFoundOnTheirPage() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             // The two links are at the end of the first chapter, so they are on one of its pages
             final int firstOfSecond = Integer.parseInt(
                     document.getOutline().get(1).getLink().substring(1));
@@ -621,7 +622,7 @@ public class FoliateEngineDeviceTest {
             final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
             try {
                 final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT,
-                        BookCSS.get().fontSizeSp);
+                        BookCSS.get().fontSizeSpFoliate);
                 // Every word of the book, plus the halves of the ones it allows to be broken.
                 // A soft hyphen is Librera asking for a break there, so a word that carries one
                 // may legitimately come back as the part before it and the part after.
@@ -668,7 +669,7 @@ public class FoliateEngineDeviceTest {
     public void thePageHasTheReadersMarginsAndNoOthers() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             float left = 1f;
             float right = 0f;
             for (TextWord[] line : document.getPage(0).getText()) {
@@ -683,7 +684,7 @@ public class FoliateEngineDeviceTest {
             assertTrue("the page has text to measure", right > left);
 
             // What BookCSS asks for: `margin * 2 / 10` ems a side, at the reading font size
-            final float em = Dips.spToPx(BookCSS.get().fontSizeSp);
+            final float em = Dips.spToPx(BookCSS.get().fontSizeSpFoliate);
             final float expected = (BookCSS.get().marginLeft + BookCSS.get().marginRight)
                     * 0.2f * em / 2f / PAGE_WIDTH;
             assertTrue("the margins are the reader's, left " + left + " against " + expected,
@@ -729,7 +730,7 @@ public class FoliateEngineDeviceTest {
     public void theContentsResolveToPages() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final List<OutlineLink> outline = document.getOutline();
             assertEquals("a chapter per entry: " + outline, TITLES.length, outline.size());
             for (int i = 0; i < outline.size(); i++) {
@@ -766,7 +767,7 @@ public class FoliateEngineDeviceTest {
     public void aBookmarkFindsItsPageAgain() {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final int target = Math.min(pages, 2);
             final String text = document.getBookmarkText(target);
             assertNotNull("the page offers an anchor", text);
@@ -790,14 +791,14 @@ public class FoliateEngineDeviceTest {
      */
     @Test
     public void aLocationFindsItsPageAgain() {
-        final int fontBefore = BookCSS.get().fontSizeSp;
+        final int fontBefore = BookCSS.get().fontSizeSpFoliate;
         try {
-            BookCSS.get().fontSizeSp = 18;
+            BookCSS.get().fontSizeSpFoliate = 18;
             final String cfi;
             final String wordsThere;
             CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
             try {
-                final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+                final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
                 final int target = Math.min(pages, 4);
                 cfi = document.getLocation(target);
                 assertNotNull("the engine named the place", cfi);
@@ -811,10 +812,10 @@ public class FoliateEngineDeviceTest {
             }
 
             // The same place, in a book paginated differently
-            BookCSS.get().fontSizeSp = 30;
+            BookCSS.get().fontSizeSpFoliate = 30;
             document = open(AppState.EPUB_ENGINE_FOLIATE);
             try {
-                final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+                final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
                 final int found = document.findLocationPage(cfi);
                 assertTrue("the place is still in the book: " + found + " of " + pages,
                         found > 0 && found <= pages);
@@ -828,7 +829,7 @@ public class FoliateEngineDeviceTest {
                 document.recycle();
             }
         } finally {
-            BookCSS.get().fontSizeSp = fontBefore;
+            BookCSS.get().fontSizeSpFoliate = fontBefore;
         }
     }
 
@@ -846,7 +847,7 @@ public class FoliateEngineDeviceTest {
 
         final CodecDocument foliate = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            foliate.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            foliate.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             assertEquals("and nonsense is refused rather than guessed at", -1,
                     foliate.findLocationPage("not a cfi at all"));
             assertEquals("as is nothing", -1, foliate.findLocationPage(""));
@@ -864,16 +865,16 @@ public class FoliateEngineDeviceTest {
      */
     @Test
     public void aMarkFindsItsWordsAfterARelayout() {
-        final int fontBefore = BookCSS.get().fontSizeSp;
+        final int fontBefore = BookCSS.get().fontSizeSpFoliate;
         try {
-            BookCSS.get().fontSizeSp = 18;
+            BookCSS.get().fontSizeSpFoliate = 18;
             final String cfi;
             final String marked;
             final int markedPage = 2;
 
             CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
             try {
-                document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+                document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
                 final List<TextWord> selection = someWordsOn(document, markedPage - 1);
                 marked = AnnotationsFinder.textOf(selection);
                 assertTrue("there are words to mark: " + marked, marked.split(" ").length >= 3);
@@ -895,10 +896,10 @@ public class FoliateEngineDeviceTest {
             }
 
             // The same mark, in a book paginated differently
-            BookCSS.get().fontSizeSp = 30;
+            BookCSS.get().fontSizeSpFoliate = 30;
             document = open(AppState.EPUB_ENGINE_FOLIATE);
             try {
-                final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+                final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
                 final int found = document.findLocationPage(cfi);
                 assertTrue("the marked words are still in the book: " + found + " of " + pages,
                         found > 0 && found <= pages);
@@ -934,7 +935,7 @@ public class FoliateEngineDeviceTest {
                 document.recycle();
             }
         } finally {
-            BookCSS.get().fontSizeSp = fontBefore;
+            BookCSS.get().fontSizeSpFoliate = fontBefore;
         }
     }
 
@@ -950,7 +951,7 @@ public class FoliateEngineDeviceTest {
         AnnotationsData.get().removeAll(file.getPath());
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            final int pages = document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             assertTrue("a book of several pages to tell apart, got " + pages, pages >= 3);
 
             final int marked = 2;
@@ -1046,7 +1047,7 @@ public class FoliateEngineDeviceTest {
     public void theMainThreadIsNeverBlocked() throws Exception {
         final CodecDocument document = open(AppState.EPUB_ENGINE_FOLIATE);
         try {
-            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSp);
+            document.getPageCount(PAGE_WIDTH, PAGE_HEIGHT, BookCSS.get().fontSizeSpFoliate);
             final CountDownLatch done = new CountDownLatch(1);
             final long[] took = new long[1];
             new Handler(Looper.getMainLooper()).post(new Runnable() {
