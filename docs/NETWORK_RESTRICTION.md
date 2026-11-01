@@ -113,24 +113,38 @@ avoid a mixed-version test runtime. The pre-existing `TestSync` JVM test now
 supplies an Android storage stub instead of dereferencing android.jar's null
 `Environment.getExternalStorageDirectory()` result.
 
-## Built artifacts and remaining device-test failure
+## Foliate column-boundary regression
 
-[CI run 41261415806](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/runs/41261415806)
-successfully assembled all debug variants, passed the complete FDroid-JS JVM
-suite, assembled the minified test-key release, and uploaded both universal
-FDroid-JS APKs:
+The original [full CI run](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/runs/41261415806)
+assembled debug/release APKs and passed the JVM suite, but its device suite exposed
+`FoliateEngineDeviceTest.everyWordOfThePageIsSelectable` (`writtenout` versus
+`writtenoutat`). This assertion remains enabled and unchanged.
 
-[Download debug + release APKs](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/runs/41261415806/artifacts/13065517601)
+Selection formerly split wrapped words by a cumulative range's bottom edge.
+That bottom stays at the previous column's last line when the word continues at
+the next column's top. TTS instead used a whole-word bounding rectangle spanning
+both columns. The two paths could lose, duplicate or misassign boundary text.
 
-The artifact expires after 14 days. Both are evaluation builds; the release is
-**not production-signed**. APK production sources are at commit `1518686`.
+The bridge now visits actual painted line/column fragments for both consumers,
+ignores zero-area caret/soft-hyphen rectangles, and rejects off-page fragments on
+both axes. It checks the final painted fragment of each growing DOM range, not
+the cumulative bounding box's bottom.
 
-The headless emulator executed both FDroid and FDroid-JS device suites. Network
-policy/WebView checks did not report failures. The **overall CI run remains red**:
-`FoliateEngineDeviceTest.everyWordOfThePageIsSelectable` reported an extra `at`
-when selecting the last word on page 0 (`writtenout` versus `writtenoutat`). This
-reader-selection assertion has not been removed, weakened, or excluded to make
-the workflow green. Several optional user-supplied sample-book checks are skipped
-when their fixtures are absent. Complete reports are in the run's `test-results`
-artifact. APK compilation and delivery succeeded; full emulator-suite integrity
-is not yet verified.
+Regression coverage includes six dependency-free Node tests (some/thing on
+adjacent columns, an off-page word with an on-page caret, equal baselines in
+different columns, and vertical clipping). The original implementation fails
+these boundary checks. A separate Android test also concatenates **every page**
+and compares both selection and TTS against the known original EPUB text, so the
+two consumers cannot pass simply by agreeing on the same missing/duplicated text.
+The fix was additionally checked in headless Chromium over multiple column
+heights and font sizes, including preservation of the entire original text.
+
+CI continues to run the complete JVM suite and both FDroid/FDroid-JS device
+suites, without filtering the failing assertion or weakening its expected text.
+Optional sample-book checks remain skipped when their user-supplied fixtures are
+absent; assumption skips are reported separately from assertion failures.
+
+Download the latest `librera-restricted-apks` and `test-results` artifacts from
+[Android CI](https://github.com/markcollege2026-droid/LibreraReader-lock-to-Anna-s-archive-/actions/workflows/ci.yml).
+APKs are evaluation builds, the release uses a CI test key (not a production key),
+and artifacts expire after 14 days.
