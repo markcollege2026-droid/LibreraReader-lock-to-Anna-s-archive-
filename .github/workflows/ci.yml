@@ -38,16 +38,17 @@ jobs:
         run: bash scripts/ci-command.sh sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;27.2.12479018'
       - name: Check dependencies and compile Java before the expensive native build
         run: bash scripts/ci-command.sh ./gradlew :app:checkFdroidJSDebugAarMetadata :app:compileFdroidJSDebugJavaWithJavac --stacktrace
-      - name: Install native build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential pkg-config libfreetype-dev libharfbuzz-dev libjpeg-dev libopenjp2-7-dev zlib1g-dev libgumbo-dev libmujs-dev mesa-common-dev libxcursor-dev libxrandr-dev libxinerama-dev libglu1-mesa-dev libxi-dev libgl-dev
       - name: Cache native libraries
         id: native-cache
         uses: actions/cache/restore@v4
         with:
           path: Builder/mupdf-1.28.5
           key: native-linux-ndk27-1.28.5-${{ hashFiles('Builder/jni/**', 'Builder/link_to_mupdf_1.28.5.sh', 'Builder/ci-native.sh') }}
+      - name: Install native build dependencies
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        run: |
+          bash scripts/ci-command.sh sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update
+          bash scripts/ci-command.sh sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 install -y build-essential pkg-config libfreetype-dev libharfbuzz-dev libjpeg-dev libopenjp2-7-dev zlib1g-dev libgumbo-dev libmujs-dev mesa-common-dev libxcursor-dev libxrandr-dev libxinerama-dev libglu1-mesa-dev libxi-dev libgl-dev
       - name: Build and link native reader libraries
         run: |
           chmod +x gradlew
